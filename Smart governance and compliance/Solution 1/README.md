@@ -16,6 +16,7 @@ The system detects and represents:
 - **Material / scope variance** — bills of quantities drifting from baseline
 - **Evidence completeness** — change orders that cite documents not actually attached
 - **Change-order frequency** — amendment patterns that warrant closer review
+<img width="1778" height="962" alt="image" src="https://github.com/user-attachments/assets/9f852c04-8924-4c14-80ca-ae170bf4f2f6" />
 
 ## Variation model (what counts as "meaningful")
 
