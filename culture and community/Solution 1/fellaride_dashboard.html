@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FellaRide Cold-Start Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#070b18;--panel:rgba(17,24,46,.72);--line:rgba(120,140,220,.14);--txt:#e6ecff;--mut:#8fa3cf;--cyan:#22d3ee;--lime:#a3e635;--gold:#fbbf24;--pink:#f472b6;--violet:#a78bfa}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;color:var(--txt);background:
+ radial-gradient(1200px 600px at 85% -10%,rgba(34,211,238,.16),transparent 60%),
+ radial-gradient(1000px 500px at -10% 30%,rgba(167,139,250,.14),transparent 55%),
+ radial-gradient(900px 700px at 50% 110%,rgba(163,230,53,.08),transparent 55%),var(--bg);min-height:100vh;padding:26px}
+.wrap{max-width:1180px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#22d3ee,#a78bfa);display:grid;place-items:center;font-weight:800;font-size:22px;color:#071}
+h1{font-size:26px;letter-spacing:.3px;background:linear-gradient(90deg,#e6ecff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);font-size:13px;margin-top:4px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:20px;font-size:12px;color:var(--mut)}
+.chip b{color:var(--txt);font-weight:600}
+.ctrl{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;backdrop-filter:blur(10px);display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+.field input{background:#0b1124;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:8px 11px;font-size:13px;width:150px}
+.field input:focus{outline:none;border-color:var(--cyan)}
+button.run{background:linear-gradient(135deg,#22d3ee,#a78bfa);border:none;color:#071;font-weight:800;padding:9px 20px;border-radius:10px;cursor:pointer;font-size:14px}
+button.run:disabled{opacity:.6;cursor:wait}
+.loading{color:var(--cyan);font-size:12px;font-style:italic}
+.grid{display:grid;gap:16px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;backdrop-filter:blur(10px);position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--c1),var(--c2));opacity:.9}
+.kpi .v{font-size:26px;font-weight:800;background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.kpi .l{color:var(--mut);font-size:12px;margin-top:4px}
+.kpi .x{font-size:11px;color:var(--mut);opacity:.7;margin-top:2px}
+.cols{grid-template-columns:1.15fr .85fr;align-items:start}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;backdrop-filter:blur(10px)}
+.card h2{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-bottom:14px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.card h2 span{font-weight:400}
+.card h2 i{font-style:normal;width:8px;height:8px;border-radius:2px;background:var(--cyan);box-shadow:0 0 12px var(--cyan);display:inline-block;margin-right:8px}
+.chartbox{position:relative;height:280px}
+.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid var(--line);color:var(--mut);padding:7px 14px;border-radius:20px;font-size:13px;cursor:pointer;transition:.2s}
+.tab.on{background:linear-gradient(135deg,rgba(34,211,238,.18),rgba(167,139,250,.18));border-color:var(--cyan);color:var(--txt)}
+.tab.on i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--acc);box-shadow:0 0 10px var(--acc)}
+select.tab{background:var(--panel);appearance:none}
+.lead-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.lead-row:last-child{border-bottom:none}
+.place{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:700;background:rgba(255,255,255,.06);color:var(--mut);flex:none}
+.place.one{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#341;box-shadow:0 0 14px rgba(251,191,36,.5)}
+.lead-name{flex:1;min-width:0}
+.lead-name b{font-size:13.5px}
+.lead-name span{display:block;color:var(--mut);font-size:11px}
+.bar{height:6px;border-radius:4px;background:rgba(255,255,255,.07);flex:1;overflow:hidden;max-width:110px}
+.bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--acc),var(--acc2));animation:grow 1s ease}
+.score{font-size:13px;font-weight:700;width:38px;text-align:right}
+@keyframes grow{from{width:0}}
+.chan{font-size:10px;letter-spacing:.4px;padding:2px 8px;border-radius:12px;font-weight:600;text-transform:uppercase}
+.chan.d{background:rgba(34,211,238,.14);color:var(--cyan);border:1px solid rgba(34,211,238,.4)}
+.chan.c{background:rgba(167,139,250,.14);color:var(--violet);border:1px solid rgba(167,139,250,.4)}
+.chan.ai{background:rgba(163,230,53,.14);color:var(--lime);border:1px solid rgba(163,230,53,.4)}
+.out{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.out .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.out b{font-size:14px}
+.anchor{color:var(--gold);font-size:12px;font-style:italic;margin:6px 0}
+.msg{color:var(--txt);font-size:13px;line-height:1.55}
+.grp{display:inline-block;margin:0 6px 6px 0;padding:5px 11px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;font-size:12px;color:var(--mut)}
+.tw td,.tw th{padding:7px 10px;text-align:center;font-size:12.5px;border-bottom:1px solid var(--line)}
+.tw th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.tw tr.hl td{color:var(--cyan);font-weight:700}
+.meta{font-size:11px;color:var(--mut)}
+footer{margin-top:22px;color:var(--mut);font-size:12px;text-align:center;line-height:1.7}
+code{background:rgba(255,255,255,.07);padding:1px 7px;border-radius:6px;color:var(--lime)}
+.airow{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.airow .field input{width:auto;flex:1}
+.pulse{animation:p .8s ease infinite alternate}@keyframes p{from{opacity:.4}to{opacity:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand">
+    <div class="logo">F</div>
+    <div><h1>FellaRide Cold-Start Simulator</h1>
+    <div class="sub">4-layer pipeline: <b>Discover → Score → Engage → Grow</b> · local <b>gemma3:1b</b> AI drafts</div></div>
+  </div>
+  <div class="chips"><span class="chip" id="cm">Community <b>—</b></span><span class="chip" id="sm">Seed <b>42</b></span><span class="chip" id="wks">Weeks <b>6</b></span><span class="chip" id="mode">Mode <b>MOCK · not live</b></span></div>
+</header>
+
+<form class="ctrl" id="runform">
+  <div class="field"><label>Community</label><input name="community" value="Riverside Tech Park"></div>
+  <div class="field"><label>Population</label><input name="population" type="number" min="10" max="300" value="40"></div>
+  <div class="field"><label>Weeks</label><input name="weeks" type="number" min="1" max="12" value="6"></div>
+  <div class="field"><label>Seed</label><input name="seed" type="number" value="42"></div>
+  <button class="run" id="runbtn">▶ Run simulation</button>
+  <span class="loading" id="runcfg"></span>
+</form>
+
+<section class="grid kpis" id="kpis"></section>
+
+<section class="grid cols">
+  <div class="card"><h2><i></i>Growth loop <span class="meta" id="gmeta"></span></h2><div class="chartbox"><canvas id="growth"></canvas></div>
+    <table class="tw" style="width:100%;margin-top:8px"><thead><tr><th>Week</th><th>Active</th><th>New rides</th><th>Referrals</th><th>Total rides</th></tr></thead><tbody id="weektb"></tbody></table>
+  </div>
+  <div style="display:grid;gap:16px">
+    <div class="card"><h2><i></i>Signal mix extracted</h2><div class="chartbox"><canvas id="signals"></canvas></div></div>
+    <div class="card"><h2><i></i>Discovered roles</h2><div class="chartbox" style="height:200px"><canvas id="roles"></canvas></div></div>
+  </div>
+</section>
+
+<section class="grid cols" style="margin-top:16px">
+  <div class="card"><h2><i></i>Community discovered</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px" id="groups"></div>
+    <h2 style="margin-top:16px"><i></i>Top candidates by archetype</h2>
+    <div class="tabs" id="tabs"></div>
+    <div id="leaders"></div>
+  </div>
+  <div class="card"><h2><i></i>Outreach — contextual, non-promotional</h2>
+    <div class="airow">
+      <select id="aiwho" class="tab"></select>
+      <button class="run" id="aibtn" style="padding:7px 14px;font-size:13px">✦ Draft with gemma3:1b</button>
+      <span id="aimeta" class="meta"></span>
+    </div>
+    <div class="tabs" id="chanfilters"></div>
+    <div id="out"></div>
+  </div>
+</section>
+
+<footer>
+  Backend: <code>uvicorn fellaride_api:app --port 8095</code> · AI endpoint: <code>POST /draft</code> → Ollama <code>gemma3:1b</code> (falls back to rule-based drafts if Ollama is off).<br>
+  Change inputs above and hit <b>Run simulation</b> — data is regenerated live by <code>fellaride_coldstart.py</code>.
+</footer>
+</div>
+
+<script>
+const U={driver:'#22d3ee',passenger:'#a3e635',connector:'#a78bfa',early_adopter:'#f472b6'};
+const CH={driver:['#22d3ee','#67e8f9'],passenger:['#a3e635','#bef264'],connector:['#a78bfa','#c4b5fd'],early_adopter:['#f472b6','#f9a8d4']};
+const SL={'early_adopter_signal':'trying new commute apps','commute_pain':'a rough commute each morning','connector_signal':'sharing community updates','driver_signal':'filling the tank for the daily commute','event_context':'an upcoming community event','sustainability_signal':'wanting to carpool more'};
+Chart.defaults.color="#8fa3cf";Chart.defaults.font.family="Segoe UI";
+let R=null,SIG=null,ROLES=null;let charts={};let ACT="driver",CHF="all";
+const $=id=>document.getElementById(id);
+const mk=(id,cfg)=>{if(charts[id])charts[id].destroy();charts[id]=new Chart($(id),cfg);};
+
+function kpis(s){
+ $("kpis").innerHTML=[
+  ["Population",s.population,"people discovered","#22d3ee","#a78bfa"],
+  ["Signals",(SIG?Object.values(SIG).reduce((a,b)=>a+b,0):"—"),"posts & mentions","#a3e635","#22d3ee"],
+  ["Connectors",s.summary.connectors,"score ≥ 50","#a78bfa","#f472b6"],
+  ["Referrals",s.summary.referrals,"invited by peers","#f472b6","#fbbf24"],
+  ["Active",s.summary.active+" / "+s.population,"of community","#22d3ee","#a3e635"],
+  ["Rides",s.summary.total_rides,"completed total","#fbbf24","#fb7185"]
+ ].map(k=>`<div class="kpi" style="--c1:${k[3]};--c2:${k[4]}"><div class="v">${k[1]}</div><div class="l">${k[0]}</div><div class="x">${k[2]}</div></div>`).join("");
+}
+
+function render(s){
+ R=s.report;SIG=s.signals;ROLES=s.roles;
+ $("cm").innerHTML=`Community <b>${s.community}</b>`;$("sm").innerHTML=`Seed <b>${s.seed}</b>`;
+ $("wks").innerHTML=`Weeks <b>${s.weeks}</b>`;$("mode").innerHTML=`Mode <b>MOCK · ${s.summary.note}</b>`;
+ $("gmeta").textContent=`seed ${s.seed} · ${s.weeks} wks · ${s.took_ms}ms`;
+ kpis(s);
+ const W=R.growth_simulation;
+ mk("growth",{type:"line",data:{labels:W.map(w=>"W"+w.week),datasets:[
+  {label:"Total rides",data:W.map(w=>w.total_completed_rides),borderColor:"#fbbf24",backgroundColor:"rgba(251,191,36,.12)",fill:true,tension:.35,pointRadius:3,borderWidth:2.5},
+  {label:"Active users",data:W.map(w=>w.active_users),borderColor:"#22d3ee",backgroundColor:"rgba(34,211,238,.08)",fill:true,tension:.35,pointRadius:3,borderWidth:2.5},
+  {label:"New rides / wk",data:W.map(w=>w.new_rides_this_week),borderColor:"#a78bfa",borderDash:[6,4],tension:.3,pointRadius:2,borderWidth:2},
+  {label:"Referrals / wk",data:W.map(w=>w.new_referrals_this_week),borderColor:"#f472b6",borderDash:[2,4],tension:.3,pointRadius:2,borderWidth:2}
+ ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{position:"top",labels:{usePointStyle:true,boxWidth:7}}},scales:{y:{beginAtZero:true,grid:{color:"rgba(120,140,220,.08)"}},x:{grid:{display:false}}}}});
+ mk("signals",{type:"doughnut",data:{labels:Object.keys(SIG),datasets:[{data:Object.values(SIG),backgroundColor:["#22d3ee","#a78bfa","#f472b6","#fbbf24","#a3e635","#38bdf8"],borderColor:"#0b1124",borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",labels:{usePointStyle:true,boxWidth:6}}}}});
+ mk("roles",{type:"bar",data:{labels:Object.keys(ROLES),datasets:[{data:Object.values(ROLES),backgroundColor:["#22d3ee","#a3e635","#a78bfa","#f472b6"],borderRadius:8,barThickness:26}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0},grid:{color:"rgba(120,140,220,.08)"}},x:{grid:{display:false}}}}});
+ $("weektb").innerHTML=W.map((w,i)=>`<tr class="${i==W.length-1?"hl":""}"><td>${w.week}</td><td>${w.active_users}</td><td>${w.new_rides_this_week}</td><td>${w.new_referrals_this_week}</td><td>${w.total_completed_rides}</td></tr>`).join("");
+ $("groups").innerHTML=R.discovered_groups.map(g=>`<span class="grp">${g}</span>`).join("");
+ fillWho();renderAct();renderOut();
+}
+
+function fillWho(){
+ const per={};
+ Object.entries(R.top_candidates).forEach(([a,arr])=>arr.forEach(p=>per[p.name]={role:p.role_hint,signal:p.signal_type||"commute_pain",score:a}));
+ const aiwho=$("aiwho");const prev=aiwho.value;
+ aiwho.innerHTML=Object.keys(per).map(n=>`<option value="${n}">${n} · ${per[n].role}</option>`).join("");
+ if(prev&&per[prev])aiwho.value=prev;
+ window.__per=per;
+}
+
+const tabsBox=$("tabs");tabsBox.innerHTML="";
+["driver","passenger","connector","early_adopter"].forEach((a,i)=>{
+ const b=document.createElement("button");b.className="tab"+(i==0?" on":"");b.style.setProperty("--acc",U[a]);b.innerHTML="<i></i>"+a.replace("_"," ");
+ b.onclick=()=>{tabsBox.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));b.classList.add("on");ACT=a;renderAct();};tabsBox.appendChild(b);
+});
+function renderAct(){
+ $("leaders").innerHTML=R.top_candidates[ACT].map((r,i)=>`
+ <div class="lead-row"><div class="place${i==0?" one":""}">${i+1}</div>
+ <div class="lead-name"><b>${r.name}</b><span>${r.role_hint} · ${ACT.replace("_"," ")} archetype</span></div>
+ <div class="bar"><i style="width:${r.score}%;--acc:${CH[ACT][0]};--acc2:${CH[ACT][1]}"></i></div>
+ <div class="score">${r.score}</div></div>`).join("");
+}
+
+const fb=$("chanfilters");fb.innerHTML="";
+["all","direct","connector-relayed"].forEach(c=>{
+ const b=document.createElement("button");b.className="tab"+(c=="all"?" on":"");b.textContent=c=="all"?"All drafts":c;
+ b.onclick=()=>{fb.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));b.classList.add("on");CHF=c;renderOut();};fb.appendChild(b);
+});
+function renderOut(){
+ const items=R.sample_outreach.filter(o=>CHF=="all"||o.channel==CHF);
+ $("out").innerHTML=items.map(o=>`<div class="out"><div class="top"><b>${o.name}</b><span class="chan ${o.channel=="connector-relayed"?"c":"d"}">${o.channel}</span></div>
+ <div class="anchor">“${o.anchor_signal}”</div><div class="msg">${o.message}</div></div>`).join("");
+}
+
+$("aibtn").onclick=async()=>{
+ const n=$("aiwho").value,p=window.__per?window.__per[n]:{role:"resident",signal:"commute_pain"};
+ const b=$("aibtn");b.disabled=true;b.classList.add("pulse");$("aimeta").textContent="composing with gemma3:1b…";
+ try{
+  const r=await fetch("/draft",{method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({community:(window.s?window.s.community:"Riverside Tech Park"),name:n,role:p.role,signal_type:p.signal,signal_text:SL[p.signal]||""})});
+  const d=await r.json();
+  const el=$("out");el.insertAdjacentHTML("afterbegin",
+   `<div class="out" style="border-color:rgba(163,230,53,.5)"><div class="top"><b>${n}</b><span class="chan ai">AI · ${d.model}</span></div>
+    <div class="msg">${d.message}</div><div class="meta" style="margin-top:6px">took ${d.took_ms}ms${d.fallback?" · fallback (ollama off)":""}</div></div>`);
+  $("aimeta").textContent=`${d.model} · ${d.took_ms}ms ✅`;
+ }catch(e){$("aimeta").textContent="draft failed: "+e.message;}
+ b.disabled=false;b.classList.remove("pulse");
+};
+
+$("runform").addEventListener("submit",async ev=>{
+ ev.preventDefault();
+ const f=new FormData(ev.target);
+ const body=JSON.stringify({community:f.get("community"),population:+f.get("population"),weeks:+f.get("weeks"),seed:+f.get("seed")});
+ const b=$("runbtn");const cfg=$("runcfg");b.disabled=true;cfg.className="loading pulse";cfg.textContent="running simulation…";
+ try{
+  const r=await fetch("/run",{method:"POST",headers:{"Content-Type":"application/json"},body});
+  const d=await r.json();
+  window.s=d;render(d);cfg.className="loading";cfg.textContent=`simulated in ${d.took_ms}ms · ${d.summary.note}`;
+ }catch(e){cfg.textContent="error: "+e.message;}
+ b.disabled=false;
+});
+
+(async()=>{await new Promise(r=>setTimeout(r,200));fetch("/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})})
+ .then(r=>r.json()).then(d=>{window.s=d;render(d);}).catch(()=>{});})();
+</script>
+</body>
+</html>
